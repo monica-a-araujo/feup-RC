@@ -163,7 +163,7 @@ int llwrite(int fd, const unsigned char *buf, int bufSize){
         memcpy(buf,buf_cpy,bufSize);
         memset(fr,0,strlen(fr));
 
-        fr_len = frame_i(buf, fr, bufSize, (0x00 | (sval_sen << 6 )));
+        fr_len = frame_i_generator(buf, fr, bufSize, (0x00 | (sval_sen << 6 )));
         alarm(TIMEOUT);
         if( write(fd,fr,fr_len) < 0){
             printf("Sender wasn't able to write into frame.")
@@ -244,7 +244,7 @@ void alarm_off() {
     alarm(0);
 }
 
-int frame_i(char *data, char *frame, int data_len, char CMD){
+int frame_i_generator(char *data, char *frame, int data_len, char CMD){
     int fr_len, bcc_len= 1;
 
     // Stuffing bcc2 and data.

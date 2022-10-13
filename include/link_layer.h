@@ -45,7 +45,7 @@ int llread(unsigned char *packet);
 int llclose(int showStatistics, int i);
 void handle_alarm_timeout();
 void alarm_off();
-int frame_i(char *data, char *frame, int data_len, char CMD);
+int frame_i_generator(char *data, char *frame, int data_len, char CMD);
 void install_alarm();
 
 
