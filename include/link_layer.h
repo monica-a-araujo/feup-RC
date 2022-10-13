@@ -42,6 +42,11 @@ int llread(unsigned char *packet);
 // Close previously opened connection.
 // if showStatistics == TRUE, link layer should print statistics in the console on close.
 // Return "1" on success or "-1" on error.
-int llclose(int showStatistics);
+int llclose(int showStatistics, int i);
+void handle_alarm_timeout();
+void alarm_off();
+int frame_i(char *data, char *frame, int data_len, char CMD);
+void install_alarm();
+
 
 #endif // _LINK_LAYER_H_
