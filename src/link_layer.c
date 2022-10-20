@@ -21,42 +21,68 @@ struct termios oldtio_rec;
 // MISC
 #define _POSIX_SOURCE 1 // POSIX compliant source
 
-////////////////////////////////////////////////
-// LLOPEN
-////////////////////////////////////////////////
+
+
 int llopen(LinkLayer connectionParameters)
 {   
     int fd;
-    int connection = -1; //conecão ainda não esta feita
+    int connection = -1; //connection inicialmente nao esta estabelecida
+    int sent = -1;
 
 
     //erro - tipo de conecção errada
     if (connectionParameters.role != LlTx && connectionParameters.role != LlRx){
-        printf("Actual flag %d. MUst be %d or %d", connectionParameters.role, LlTx, LlRx);
+        printf("Actual flag %d. Must be %d or %d", connectionParameters.role, LlTx, LlRx);
         return -1;
     }
 
     //Coneçao com o emissor
     if(connectionParameters.role==LlTx){
-
+        
+        //abrir file discriptor
         fd = openfd(connectionParameters.serialPort, connectionParameters.baudRate);
         
 
-        while (connection != 0){
-        //iniciar alarme
-        //mandar set (verificar que se mandou mesmo se não erro)
-        //ler UA (verificar que se mandou o certo, se não erro)
+        while (connection < 0 && sent < 0){
+            //iniciar alarme
+            alarm(connectionParameters.timeout);
 
+            //mandar set (verificar que se mandou mesmo e se não há erro)
+            if((sent = sendframe_S_U(fd, A, SET))<0){
+                printf("Send frame SET fail. Sending again after timeout.\n");
+            } else printf("Send SET with success.\n");
+
+            //ler UA (verificar que se mandou o certo, se não erro)
+            if((connection = readframe_S_A(fd, UA)) < 0){
+                printf("Still not receve UA. Starting again.");
+            } else printf("Receive UA.");
+       }
+
+       if(connection == 0 && sent >= 0){ //o frame set e UA foram enviados e recebidos correctamente e a coneção foi estabelecida.
+        turnOffAlarm();
        }
     } 
 
     //coneção com o receptor
     else if(connectionParameters.role == LlRx){
+        //abrir file discriptor
+        fd = openfd(connectionParameters.serialPort, connectionParameters.baudRate);
+        
+        while (connection < 0 && sent < 0){
+            //ler set e verificações padrão
+            if((connection = readframe_S_A(fd, SET)) < 0){
+                printf("Still not receve SET.\n");
+            } else printf("Receive SET.\n");
 
+            //mandar UA e verificações padrão
+            if((sent = sendframe_S_U(fd, A, UA))<0){
+                printf("Send frame UA fail\n");
+            } else printf("Send UA with success.\n");
+        }
     }
-
-    return 1;
+    return fd;
 }
+
 int openfd(char serialPort[50],int baudRate){
     struct termios oldtio;
     struct termios newtio;
@@ -144,6 +170,76 @@ int openfd(char serialPort[50],int baudRate){
     return fd;
 }
 
+int sendframe_S_U(int fd, char addressField, char controlField){
+    char frame[5];
+    frame[0]= FLAG;
+    frame[1]= addressField;
+    frame[2]= controlField;
+    frame[3]= frame[1] ^ frame[2];
+    frame[4]= FLAG;
+
+    return write(fd, frame, 5); 
+
+    //sucesso return > 0 (numero de bytes escritos)
+    //erro return == -1
+
+}
+
+int readframe_S_A(int fd, char controlField){
+    int state=0; //state da maquina de estados, inicialmente 0
+    char buffer;
+
+    while(TRUE){
+        //ler o campo do outro terminal, se não conseguirmos, dá erro
+
+        //NOTA: não consegui confirmar, mas pelo que entendi o read escreve no frame - buffer
+        //      e depois sempre que é chamado outra vez, volta a rescrever por cima.
+        if(read(fd, &buffer, 1)==-1){
+            return -1;
+        }
+
+        switch (state)
+        {
+        case 0:
+            if(buffer==FLAG){
+                state==1;
+            }
+            break;
+
+        case 1:
+            if (buffer == A){
+                state==2;
+            } else changeState(buffer, &state);
+            break;
+
+        case 2:
+            if(buffer == controlField){
+                state==3;
+            } else changeState(buffer, &state);
+            break;
+
+        case 3:
+            if (buffer== controlField ^ A){
+                state == 4;
+            } else changeState(buffer, &state);
+            break;
+        
+        case 4:
+            if (buffer == FLAG){
+                return 0; //concluido, programa leu a frame pretendida
+            } else state ==0;
+            break;
+        }   
+    }
+
+}
+
+void changeState(char buffer, int *state){
+    if (buffer == FLAG){
+        state==1;
+    } else state == 0;
+}
+
 int llwrite(int fd, const unsigned char *buf, int bufSize){
     static int sval_sen = 0;
     int fr_len;
@@ -178,14 +274,14 @@ int llwrite(int fd, const unsigned char *buf, int bufSize){
         else printf("Succeded to read CMD= %02x with R =%d ",CMD,!sval_sen);
 
         if ((CMD == 0x05 | ( 1 << 7 )) && sval_sen == 0 || (CMD == 0x05 | ( 0 << 7 )) && sval_sen == 1){
-            alarm_off();
+            turnOffAlarm();
             sval_sen = !sval_sen;
             free(fr);
             free(buf_cpy);
             return 0;
         }
         if (CMD == (0x01 | ( !sval_sen << 7 )) || CMD == (0x01 | ( sval_sen<< 7 ))){
-            alarm_off();
+            turnOffAlarm();
             printf("Error : Received REJ SIGNAL");
             continue;
         }
@@ -239,10 +335,11 @@ void handle_alarm_timeout() {
 }
 
 
-void alarm_off() {
+void turnOffAlarm() {
     numTransmissions = 0;
     alarm(0);
 }
+
 
 int frame_i_generator(char *data, char *frame, int data_len, char CMD){
     int fr_len, bcc_len= 1;
@@ -263,8 +360,8 @@ int frame_i_generator(char *data, char *frame, int data_len, char CMD){
     frame[0] = FLAG;
     frame[1] = A;
     frame[2] = CMD;
-    frame[3] = frame[1]^frame[2];
-    // BCC
+    frame[3] = frame[1]^frame[2]; // BCC1
+
     memcpy(&frame[4], data, data_len);
     memcpy(&frame[4 + data_len], BCC2, bcc_len);
 

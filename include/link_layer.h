@@ -44,7 +44,7 @@ int llread(unsigned char *packet);
 // Return "1" on success or "-1" on error.
 int llclose(int showStatistics, int i);
 void handle_alarm_timeout();
-void alarm_off();
+void turnOffAlarm();
 int frame_i_generator(char *data, char *frame, int data_len, char CMD);
 void install_alarm();
 
