@@ -44,11 +44,17 @@ int llread(unsigned char *packet);
 // Return "1" on success or "-1" on error.
 int llclose(int showStatistics, int i);
 void handle_alarm_timeout();
+void handle_alarm_timeout();
 void alarm_off();
 int frame_i(char *data, char *frame, int data_len, char CMD);
 int byte_stuffing(char * frame, int* fr_len);
 int closefd(int fd, struct termios* oldtio);
+void turnOffAlarm();
+int frame_i_generator(char *data, char *frame, int data_len, char controlField);
 void install_alarm();
+void changeState(char buffer, int *state);
+int readframe_S_A(int fd, char controlField);
+int sendframe_S_U(int fd, char addressField, char controlField);
 
 
 

@@ -59,8 +59,8 @@
 #define SET             0x03        /* SET command*/
 #define DISC            0x0B        /* DISC command*/
 #define UA              0x07        /* UA command*/
-#define CMD_RR(r)           (0x05 | ( r << 7 ))
-#define CMD_REJ(r)          (0x01 | ( r << 7 ))
+#define RR(r)           (0x05 | ( r << 7 ))
+#define REJ(r)          (0x01 | ( r << 7 ))
 
 /* MACROS FOR THE APPLICATION --------------------------------------------------------------------------------------*/
 
