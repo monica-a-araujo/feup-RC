@@ -253,7 +253,7 @@ void changeState(char buffer, int *state){
     } else state == 0;
 }
 
-int llwrite(int fd, const unsigned char *buf, int bufSize){
+int llwrite(int fd, unsigned char *buf, int bufSize){
     static int sval_sen = 0;  // 0S000000 s = N(s) -> número de sequência
     int fr_len;
     char controlField;
@@ -314,7 +314,7 @@ int llread(unsigned char *packet)
 }
 
 ////////////////////////////////////////////////
-// LLCLOSE
+// LLCLOSE 
 ////////////////////////////////////////////////
 int llclose(int showStatistics, int i)
 {
