@@ -55,7 +55,7 @@ void turnOffAlarm();
 int frame_i_generator(char *data, char *frame, int data_len, char controlField);
 void install_alarm();
 void changeState(char buffer, int *state);
-int readframe_S_A(int fd, char controlField);
+int readframe_NS_A(int fd, char controlField);
 int sendframe_S_U(int fd, char addressField, char controlField);
 
 

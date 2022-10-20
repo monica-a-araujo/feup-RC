@@ -53,7 +53,7 @@ int llopen(LinkLayer connectionParameters)
             } else printf("Send SET with success.\n");
 
             //ler UA (verificar que se mandou o certo, se não erro)
-            if((connection = readframe_S_A(fd, UA)) < 0){
+            if((connection = readframe_NS_A(fd, UA)) < 0){
                 printf("Still not receve UA. Starting again.");
             } else printf("Receive UA.");
        }
@@ -70,7 +70,7 @@ int llopen(LinkLayer connectionParameters)
         
         while (connection < 0 && sent < 0){
             //ler set e verificações padrão
-            if((connection = readframe_S_A(fd, SET)) < 0){
+            if((connection = readframe_NS_A(fd, SET)) < 0){
                 printf("Still not receve SET.\n");
             } else printf("Receive SET.\n");
 
@@ -194,8 +194,8 @@ int sendframe_S_U(int fd, char addressField, char controlField){
     //erro return == -1
 
 }
-
-int readframe_S_A(int fd, char controlField){
+//ler UA
+int readframe_NS_A(int fd, char controlField){
     int state=0; //state da maquina de estados, inicialmente 0
     char buffer;
     int analy;
@@ -226,8 +226,70 @@ int readframe_S_A(int fd, char controlField){
             break;
 
         case 2:
+       /*
+            //Nota: o que significa o rr/rej começar com 0 ou 1 (binario)
+            if(buffer == RR(0) || buffer == RR(1) || buffer == REJ(0) || buffer == REJ(1)){
+                state == 3;
+                *controlField = buffer;
+            }
+        */
             if(buffer == controlField){
                 state==3;
+            } else changeState(buffer, &state);
+            break;
+
+        case 3:
+            if (buffer== controlField ^ A){
+                state == 4;
+            } else changeState(buffer, &state);
+            break;
+        
+        case 4:
+            if (buffer == FLAG){
+                return 0; //concluido, programa leu a frame pretendida
+            } else state ==0;
+            break;
+        }   
+    }
+
+}
+
+//ler RR e REJ
+int readframe_S_A(int fd, char *controlField){
+    int state=0; //state da maquina de estados, inicialmente 0
+    char buffer;
+    int analy;
+
+    while(TRUE){
+        //ler o campo do outro terminal, se não conseguirmos, dá erro
+
+        //NOTA: não consegui confirmar, mas pelo que entendi o read escreve no frame - buffer
+        //      e depois sempre que é chamado outra vez, volta a rescrever por cima. - CERTO 
+        if((analy = read(fd, &buffer, 1))==1){
+            continue;
+        } else if (analy == -1){
+            return -1;
+        }
+
+        switch (state)
+        {
+        case 0:
+            if(buffer==FLAG){
+                state==1;
+            }
+            break;
+
+        case 1:
+            if (buffer == A){
+                state == 2;
+            } else changeState(buffer, &state);
+            break;
+
+        case 2:
+            //Nota: o que significa o rr/rej começar com 0 ou 1 (binario)
+            if(buffer == RR(0) || buffer == RR(1) || buffer == REJ(0) || buffer == REJ(1)){
+                state == 3;
+                *controlField = buffer;
             } else changeState(buffer, &state);
             break;
 
@@ -281,11 +343,10 @@ int llwrite(int fd, unsigned char *buf, int bufSize){
         }
         else printf("Frame sent with S = %d",sval_sen);
 
-        if(readframe_S_A(fd,&controlField) < 0){
+        if(readframe_S_A(fd, &controlField) < 0){
             printf("Wasn't able to read info frame.");
             continue;
-        }
-        else printf("Succeded to read controlField= %02x with R =%d ", controlField, !sval_sen);
+        }else printf("Succeded to read controlField= %02x with R =%d ", controlField, !sval_sen);
 
         if ((controlField == 0x05 | ( 1 << 7 )) && sval_sen == 0 || (controlField == 0x05 | ( 0 << 7 )) && sval_sen == 1){
             turnOffAlarm();
