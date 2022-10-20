@@ -144,6 +144,16 @@ int openfd(char serialPort[50],int baudRate){
     return fd;
 }
 
+int closefd(int fd, struct termios* oldtio){
+
+    if (tcsetattr(fd, TCSANOW, oldtio) == -1) {
+        perror("tcsetattr");
+        exit(-1);
+    }
+    printf("Success : Oldtio restoured");
+    return close(fd);
+}
+
 int llwrite(int fd, const unsigned char *buf, int bufSize){
     static int sval_sen = 0;
     int fr_len;
@@ -171,7 +181,7 @@ int llwrite(int fd, const unsigned char *buf, int bufSize){
         }
         else printf("Frame sent with S = %d",sval_sen);
 
-        if(r_fr_s(fd,&CMD)<0){
+        if(read_fr_s(fd,&CMD)<0){
             printf("Wasn't able to read info frame.");
             continue;
         }
@@ -233,7 +243,7 @@ void handle_alarm_timeout() {
     if (numTransmissions > MAX_TRANS)
     {
         printf("Exceeded number of allowed transmissions.\n");
-        closeDescriptor(fd_tr, &oldtio_trans);
+        closefd(fd_trans, &oldtio_trans);
         exit(-1);
     }
 }
@@ -274,8 +284,7 @@ int frame_i(char *data, char *frame, int data_len, char CMD){
 
     return fr_len;
 }
-int byte_stuffing(char * frame, int* fr_len)
-{
+int byte_stuffing(char * frame, int* fr_len){
     char * tmp_frame;
     int ext_len = 0;        /* The extra space needed to be added to the frame. */
     int tmp_frame_len;   /* The new length of the string frame (extra + length). */
@@ -318,3 +327,6 @@ int byte_stuffing(char * frame, int* fr_len)
     free(tmp_frame);
     return 0;
 }
+
+
+

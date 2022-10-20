@@ -45,14 +45,13 @@
 
 /* MACROS FOR THE ALARM AND LOOPS---------------------------------------------------------------------------------- */
 
-#define MAX_TRANS               3   /* Tries to read the receptor answers*/ //TODO: do I need this?
+#define MAX_TRANS           3   /* Tries to read the receptor answers*/
 #define TIMEOUT             3   /* Time to wait for the receptor answers*/
 #define TRIES_READ          3   // TODO: do I need this?
 /* MACROS FOR THE PROTOCOL-------------------------------------------------------------------------------------------*/
 
 #define FLAG                0x7E
 #define ESC                 0x7D
-#define XOR_STUFFING(N)     (N^0x20)
 #define A                   0x03
 
 /**Command Field*/

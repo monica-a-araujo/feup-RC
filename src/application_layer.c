@@ -12,7 +12,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
     conParameters.nRetransmissions=nTries;
     conParameters.baudRate=baudRate;
     conParameters.role=role;
-    stcpy(conParameters.serialPort, serialPort);
+    strcpy(conParameters.serialPort, serialPort);
 
     llopen(conParameters);
 }

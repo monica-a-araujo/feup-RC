@@ -46,7 +46,10 @@ int llclose(int showStatistics, int i);
 void handle_alarm_timeout();
 void alarm_off();
 int frame_i(char *data, char *frame, int data_len, char CMD);
+int byte_stuffing(char * frame, int* fr_len);
+int closefd(int fd, struct termios* oldtio);
 void install_alarm();
+
 
 
 #endif // _LINK_LAYER_H_
