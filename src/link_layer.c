@@ -188,13 +188,16 @@ int sendframe_S_U(int fd, char addressField, char controlField){
 int readframe_S_A(int fd, char controlField){
     int state=0; //state da maquina de estados, inicialmente 0
     char buffer;
+    int analy;
 
     while(TRUE){
         //ler o campo do outro terminal, se não conseguirmos, dá erro
 
         //NOTA: não consegui confirmar, mas pelo que entendi o read escreve no frame - buffer
-        //      e depois sempre que é chamado outra vez, volta a rescrever por cima.
-        if(read(fd, &buffer, 1)==-1){
+        //      e depois sempre que é chamado outra vez, volta a rescrever por cima. - CERTO 
+        if((analy = read(fd, &buffer, 1))==1){
+            continue;
+        } else if (analy == -1){
             return -1;
         }
 
@@ -208,7 +211,7 @@ int readframe_S_A(int fd, char controlField){
 
         case 1:
             if (buffer == A){
-                state==2;
+                state == 2;
             } else changeState(buffer, &state);
             break;
 
