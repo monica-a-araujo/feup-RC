@@ -19,6 +19,10 @@ typedef struct
     int timeout;
 } LinkLayer;
 
+// Send data in buf with size bufSize.
+// Return number of chars written, or "-1" on error.
+int llwrite(int fd, unsigned char *buf, int bufSize);
+
 // SIZE of maximum acceptable payload.
 // Maximum number of bytes that application layer should send to link layer
 #define MAX_PAYLOAD_SIZE 1000
@@ -31,10 +35,6 @@ typedef struct
 // Return "1" on success or "-1" on error.
 int llopen(LinkLayer connectionParameters);
 
-// Send data in buf with size bufSize.
-// Return number of chars written, or "-1" on error.
-int llwrite(const unsigned char *buf, int bufSize);
-
 // Receive data in packet.
 // Return number of chars read, or "-1" on error.
 int llread(unsigned char *packet);
@@ -43,6 +43,8 @@ int llread(unsigned char *packet);
 // if showStatistics == TRUE, link layer should print statistics in the console on close.
 // Return "1" on success or "-1" on error.
 int llclose(int showStatistics, int i);
+
+
 void handle_alarm_timeout();
 void handle_alarm_timeout();
 void alarm_off();
