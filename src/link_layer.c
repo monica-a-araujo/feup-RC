@@ -377,9 +377,72 @@ int llread(unsigned char *packet)
 ////////////////////////////////////////////////
 // LLCLOSE 
 ////////////////////////////////////////////////
-int llclose(int showStatistics, int i)
+int llclose(int showStatistics, int fd, int role)
 {
-    // TODO
+    int desconnect = -1; //connection inicialmente ainda esta estabelecida
+
+
+    //erro - tipo de conecção errada
+    if (role != LlTx && role != LlRx){
+        printf("Actual flag %d. Must be %d or %d", role, LlTx, LlRx);
+        return -1;
+    }
+
+    //Coneçao com o emissor
+    if(role==LlTx){
+
+        while (desconnect < 0){
+            //iniciar alarme
+            alarm(TIMEOUT);
+
+            //mandar DISC (verificar que se mandou mesmo e se não há erro)
+            if((desconnect = sendframe_S_U(fd, A, DISC))<0){
+                printf("Send frame DISC fail. Sending again after timeout.\n");
+            } else printf("Send DISC with success.\n");
+
+            //ler DISC (verificar que se mandou o certo, se não erro)
+            if((desconnect = readframe_NS_A(fd, DISC)) < 0){
+                printf("Still not receve DISC. Starting again.");
+                continue;
+            } else printf("Receive DISC.");
+
+            //mandar UA (verificar que se mandou mesmo e se não há erro)
+            if((sendframe_S_U(fd, A, UA)<0) {
+                printf("Send frame UA fail. Sending again after timeout.\n");
+            } else printf("Send DISC with success.\n");
+       }
+
+       return closefd(fd, &oldtio_trans);
+    } 
+     //coneção com o receptor
+    else if(role == LlRx){
+
+        while (desconnect < 0){
+
+            //ler DISC e verificações padrão
+            if((desconnect = readframe_NS_A(fd, DISC)) < 0){
+                printf("Still not receve DISC.\n");
+                continue;
+            } else printf("Receive DISC.\n");
+
+            //mandar DISC e verificações padrão
+            if((desconnect = sendframe_S_U(fd, A, DISC))<0){
+                printf("Send frame DISC fail\n");
+                continue;
+            } else printf("Send DISC with success.\n");
+
+            //ler UA e verificações padrão
+            if((desconnect = readframe_NS_A(fd, UA)) < 0){
+                printf("Still not receve DISC.\n");
+                continue;
+            } else printf("Receive DISC.\n");
+
+        }
+
+        return closefd(fd, &oldtio_rec);
+    }
+
+
 
     return 1;
 }
