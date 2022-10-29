@@ -31,13 +31,13 @@ int llopen(LinkLayer connectionParameters)
 
 
     //erro - tipo de conecção errada
-    if (connectionParameters.role != LlTx && connectionParameters.role != LlRx){
-        printf("Actual flag %d. Must be %d or %d", connectionParameters.role, LlTx, LlRx);
+    if (connectionParameters.role != tx && connectionParameters.role != rx){
+        printf("Actual flag %d. Must be %d or %d", connectionParameters.role, tx, rx);
         return -1;
     }
 
     //Coneçao com o emissor
-    if(connectionParameters.role==LlTx){
+    if(connectionParameters.role==tx){
         
         //abrir file discriptor
         fd = openfd(connectionParameters.serialPort, connectionParameters.baudRate);
@@ -64,7 +64,7 @@ int llopen(LinkLayer connectionParameters)
     } 
 
     //coneção com o receptor
-    else if(connectionParameters.role == LlRx){
+    else if(connectionParameters.role == rx){
         //abrir file discriptor
         fd = openfd(connectionParameters.serialPort, connectionParameters.baudRate);
         
@@ -226,13 +226,6 @@ int readframe_NS_A(int fd, char controlField){
             break;
 
         case 2:
-       /*
-            //Nota: o que significa o rr/rej começar com 0 ou 1 (binario)
-            if(buffer == RR(0) || buffer == RR(1) || buffer == REJ(0) || buffer == REJ(1)){
-                state == 3;
-                *controlField = buffer;
-            }
-        */
             if(buffer == controlField){
                 state==3;
             } else changeState(buffer, &state);
@@ -383,13 +376,13 @@ int llclose(int showStatistics, int fd, int role)
 
 
     //erro - tipo de conecção errada
-    if (role != LlTx && role != LlRx){
-        printf("Actual flag %d. Must be %d or %d", role, LlTx, LlRx);
+    if (role != tx && role != rx){
+        printf("Actual flag %d. Must be %d or %d", role, tx, rx);
         return -1;
     }
 
-    //Coneçao com o emissor
-    if(role==LlTx){
+    //Conneçao com o emissor
+    if(role==tx){
 
         while (desconnect < 0){
             //iniciar alarme
@@ -398,6 +391,7 @@ int llclose(int showStatistics, int fd, int role)
             //mandar DISC (verificar que se mandou mesmo e se não há erro)
             if((desconnect = sendframe_S_U(fd, A, DISC))<0){
                 printf("Send frame DISC fail. Sending again after timeout.\n");
+                continue;
             } else printf("Send DISC with success.\n");
 
             //ler DISC (verificar que se mandou o certo, se não erro)
@@ -407,15 +401,16 @@ int llclose(int showStatistics, int fd, int role)
             } else printf("Receive DISC.");
 
             //mandar UA (verificar que se mandou mesmo e se não há erro)
-            if((sendframe_S_U(fd, A, UA)<0) {
+            if(sendframe_S_U(fd, A, UA)<0) {
                 printf("Send frame UA fail. Sending again after timeout.\n");
+                continue;
             } else printf("Send DISC with success.\n");
        }
 
        return closefd(fd, &oldtio_trans);
     } 
      //coneção com o receptor
-    else if(role == LlRx){
+    else if(role == rx){
 
         while (desconnect < 0){
 
@@ -444,7 +439,7 @@ int llclose(int showStatistics, int fd, int role)
 
 
 
-    return 1;
+    return -1; //se der erro
 }
 
 
@@ -452,7 +447,7 @@ void install_alarm() {
     if (signal(SIGALRM, handle_alarm_timeout) == SIG_ERR)
     {
         printf("It wasn't possible to install signal.");
-        llclose(fd_trans, DISC);
+        exit(-1);
     }
     siginterrupt(SIGALRM, TRUE);
 }

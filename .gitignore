@@ -2,3 +2,4 @@ bin/
 penguin-received.gif
 *.o
 .idea
+.*

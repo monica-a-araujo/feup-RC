@@ -1,14 +1,12 @@
 // Main file of the serial port project.
 // NOTE: This file must not be changed.
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <stdio.h>;
+#include <stdlib.h>;
 
-#include "application_layer.h"
+#include "application_layer.h";
+#include "include/variables.h";
 
-#define BAUDRATE 9600 //medida de velocidade de sinalização e representa o número de mudanças na linha de transmissão ou eventos por segundo
-#define N_TRIES 3
-#define TIMEOUT 4
 
 // Arguments:
 //   $1: /dev/ttySxx -> porta
@@ -20,6 +18,13 @@ int main(int argc, char *argv[])
     {
         printf("Usage: %s /dev/ttySxx tx|rx filename\n", argv[0]);
         exit(1);
+    }
+
+    //verificar que a porta de serie é escrita correctamente
+    if((strncmp(argv[1], "/dev/ttyS", 9)) != 0){
+        //diferente
+        printf("Incorrect serial port. The correct one is ... /dev/ttySxx");
+        exit(-1);
     }
 
     const char *serialPort = argv[1];

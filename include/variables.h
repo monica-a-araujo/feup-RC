@@ -18,7 +18,7 @@
 #define DEBUG  1            /* Set zero to don't show prints. */
 #define SHOW_OUTPUT 0      /* Show the information inside the state machines. */
 
-
+/*
 #define PRINT_SUC(format, ...) \
     do{ \
     if (DEBUG) \
@@ -36,7 +36,7 @@
     if (SHOW_OUTPUT) \
     printf("\e[1;34m"format "\e[0m", ##__VA_ARGS__ ); \
     }while(0)
-
+*/
 
 /* MACROS FOR THE LLOPEN FLAG --------------------------------------------------------------------------------------*/
 
@@ -46,8 +46,7 @@
 /* MACROS FOR THE ALARM AND LOOPS---------------------------------------------------------------------------------- */
 
 #define MAX_TRANS           3   /* Tries to read the receptor answers*/
-#define TIMEOUT             3   /* Time to wait for the receptor answers*/
-#define TRIES_READ          3   // TODO: do I need this?
+#define TRIES_READ          3   
 /* MACROS FOR THE PROTOCOL-------------------------------------------------------------------------------------------*/
 
 #define FLAG                0x7E
@@ -77,4 +76,10 @@
 #define SWITCH(s)           !s
 #define BIT(n)              (1 << n)
 #define DELAY_US            0.2
-#endif //RCOM_PROJECT1_VARIABLES_H
+
+/* OTHERS  ---------------------------------------------------------------------------------------------------------*/
+#define BAUDRATE 9600 //medida de velocidade de sinalização e representa o número de mudanças na linha de transmissão ou eventos por segundo
+#define N_TRIES 3
+#define TIMEOUT 4  
+
+#endif //FEUP_RC_VARIABLES_H
