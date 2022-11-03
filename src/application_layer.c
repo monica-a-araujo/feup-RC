@@ -90,9 +90,10 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
 
         /*
         ...
+        teste
         ...
         */
-
+        int i = 1;
 
 
         //TODO: perceber que estatistica e que e para mostar
