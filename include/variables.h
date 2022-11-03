@@ -45,12 +45,12 @@
 
 /* MACROS FOR THE APPLICATION --------------------------------------------------------------------------------------*/
 
-#define CTRL_DATA           1
-#define CTRL_START          2
-#define CTRL_END            3
+#define control_data           1
+#define Control_start          2
+#define control_end            3
 
-#define T_FILE_SIZE         0
-#define T_FILE_NAME         1
+#define type_file_size         0
+#define type_file_name         1
 
 /* OTHERS  ---------------------------------------------------------------------------------------------------------*/
 #define FALSE               0

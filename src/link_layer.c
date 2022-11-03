@@ -421,7 +421,7 @@ int llread(unsigned char *packet, int fd){
 ////////////////////////////////////////////////
 // LLCLOSE
 ////////////////////////////////////////////////
-int llclose(int showStatistics, int fd, int role)
+int llclose(int fd, int role)
 {
     int desconnect = -1; //connection inicialmente ainda esta estabelecida
 
@@ -493,29 +493,30 @@ int llclose(int showStatistics, int fd, int role)
     return -1; //se der erro
 }
 int read_frame_i(int fd, char *buf, char *CMD){
-    int cur_stat = 0, i_len = -1;
+    int cur_state = 0;
+    int i_len = -1;
     char byte;
 
-    while(cur_stat < 5){
+    while(cur_state < 5){
         if (read(fd, &byte, 1) == -1)
             return -1;
 
-        switch (cur_stat)
+        switch (cur_state)
         {
             // RECEBE A FLAG, SE COINCIDIR PASSA PARA O STATE 1
             case 0:
                 i_len = 0;
                 printf("Analyzing the flag - case 0: %02x\n", byte);
                 if (FLAG == byte)
-                    cur_stat ++;
+                    cur_state ++;
                 break;
                 // RECEBE O ADDR, SE FOR O ADDR AVANÇA PARA O STATE 2, SENÃO SE AINDA N FOR A FLAG REGRESSA AO ZERO ATÉ RECEBER
             case 1:
                 printf("Analyzing the ADDR - case 1: %02x\n", byte);
                 if (A == byte)
-                    cur_stat ++;
+                    cur_state ++;
                 else if (FLAG != byte)
-                    cur_stat = 0;
+                    cur_state = 0;
                 break;
 
                 // RECEBE O CMD
@@ -523,12 +524,12 @@ int read_frame_i(int fd, char *buf, char *CMD){
                 printf("Analyzing CMD - case 2: %02x\n", byte);
                 if (byte == CMD_S(0) || byte == CMD_S(1)){
                     *CMD = byte;
-                    curr_state++;
+                    cur_state++;
                 }
                 // SE RECEBEMOS A FLAG VOLTAMOS AO ESTADO 1, OU SEJA ESPERAMOS NOVAMENTE PELO ADDR
                 else if (byte == FLAG)
-                    cur_stat = 1;
-                else cur_stat = 0;
+                    cur_state = 1;
+                else cur_state = 0;
 
                 break;
 
@@ -536,12 +537,12 @@ int read_frame_i(int fd, char *buf, char *CMD){
             case 3:
                 printf("Analyzing BCC1 - case 3: %02x\n", byte);
                 if (byte == (*CMD ^ A))
-                    cur_stat ++;
+                    cur_state ++;
                 // SE RECEBEMOS A FLAG VOLTAMOS AO ESTADO 1, OU SEJA ESPERAMOS NOVAMENTE PELO ADDR
                 else if (byte == FLAG)
-                    curr_state = 1;
+                    cur_state = 1;
                 else
-                    curr_state = 0;
+                    cur_state = 0;
                 break;
                 // RECEBE A INFORMAÇÃO E PREENCHEMOS O BUF
             case 4:
@@ -549,7 +550,7 @@ int read_frame_i(int fd, char *buf, char *CMD){
                 if (byte != FLAG){
                     buf[i_len++] = byte;
                 }//SENÃO AVANÇA INVALIDANDO O ESTADO QUEBRANDO O CICLO
-                else cur_stat ++;
+                else cur_state ++;
 
         }
     }

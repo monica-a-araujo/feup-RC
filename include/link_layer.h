@@ -6,8 +6,8 @@
 
 typedef enum
 {
-    LlTx,
-    LlRx,
+    tx,
+    rx,
 } LinkLayerRole;
 
 typedef struct
@@ -40,9 +40,8 @@ int llopen(LinkLayer connectionParameters);
 int llread(unsigned char *packet, int fd);
 
 // Close previously opened connection.
-// if showStatistics == TRUE, link layer should print statistics in the console on close.
 // Return "1" on success or "-1" on error.
-int llclose(int showStatistics, int fd, int role);
+int llclose(int fd, int role);
 
 
 void handle_alarm_timeout();
@@ -60,3 +59,5 @@ void changeState(char buffer, int *state);
 int readframe_NS_A(int fd, char controlField);
 int readframe_S_A(int fd, char *controlField);
 int sendframe_S_U(int fd, char addressField, char controlField);
+
+#endif
