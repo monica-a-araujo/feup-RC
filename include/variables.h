@@ -13,11 +13,6 @@
 #define MAX_SIZE_ALLOC      16000           /* Max size for the vector. always must be higher than (FRAME_SIZE-10)*2 */
 #define FRAME_SIZE          400             /*This size must not be less than 10*/
 
-/* DEBUG MACROS ------------------------------------------------------------------------------------------------*/
-
-#define DEBUG  1            /* Set zero to don't show prints. */
-#define SHOW_OUTPUT 0      /* Show the information inside the state machines. */
-
 
 /* MACROS FOR THE LLOPEN FLAG --------------------------------------------------------------------------------------*/
 
@@ -45,9 +40,9 @@
 
 /* MACROS FOR THE APPLICATION --------------------------------------------------------------------------------------*/
 
-#define control_data           1
-#define Control_start          2
-#define control_end            3
+#define DATA           1
+#define START          2
+#define END            3
 
 #define type_file_size         0
 #define type_file_name         1
@@ -57,7 +52,6 @@
 #define TRUE                1
 #define SWITCH(s)           !s
 #define BIT(n)              (1 << n)
-#define DELAY_US            0.2
 
 /* OTHERS  ---------------------------------------------------------------------------------------------------------*/
 #define BAUDRATE 9600 //medida de velocidade de sinalização e representa o número de mudanças na linha de transmissão ou eventos por segundo

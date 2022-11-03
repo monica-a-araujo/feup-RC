@@ -30,16 +30,16 @@ int llopen(LinkLayer connectionParameters)
     int sent = -1;
 
 
-    //erro - tipo de conecção errada
+    //erro-tipo de conexão errada
     if (connectionParameters.role != tx && connectionParameters.role != rx){
         printf("Actual flag %d. Must be %d or %d", connectionParameters.role, tx, rx);
         return -1;
     }
 
-    //Coneçao com o emissor
-    if(connectionParameters.role==tx){
+    //Conexão com o emissor
+    if(connectionParameters.role == "tx"){
 
-        //abrir file discriptor
+        //abrir file descriptor
         fd = openfd(connectionParameters.serialPort, connectionParameters.baudRate);
 
 
@@ -54,24 +54,24 @@ int llopen(LinkLayer connectionParameters)
 
             //ler UA (verificar que se mandou o certo, se não erro)
             if((connection = readframe_NS_A(fd, UA)) < 0){
-                printf("Still not receve UA. Starting again.");
+                printf("Still not received UA. Starting again.");
             } else printf("Receive UA.");
        }
 
-       if(connection == 0 && sent >= 0){ //o frame set e UA foram enviados e recebidos correctamente e a coneção foi estabelecida.
+       if(connection == 0 && sent >= 0){ //o frame set e UA foram enviados e recebidos corretamente e a conexão foi estabelecida.
         turnOffAlarm();
        }
     }
 
-    //coneção com o receptor
+    //conexão com o receptor
     else if(connectionParameters.role == rx){
-        //abrir file discriptor
+        //abrir file descriptor
         fd = openfd(connectionParameters.serialPort, connectionParameters.baudRate);
 
         while (connection < 0 && sent < 0){
             //ler set e verificações padrão
             if((connection = readframe_NS_A(fd, SET)) < 0){
-                printf("Still not receve SET.\n");
+                printf("Still not received SET.\n");
             } else printf("Receive SET.\n");
 
             //mandar UA e verificações padrão
@@ -232,7 +232,7 @@ int readframe_NS_A(int fd, char controlField){
             break;
 
         case 3:
-            if (buffer== controlField ^ A){
+            if (buffer == (controlField ^ A)){
                 state = 4;
             } else changeState(buffer, &state);
             break;
@@ -249,7 +249,7 @@ int readframe_NS_A(int fd, char controlField){
 
 //ler RR e REJ
 int readframe_S_A(int fd, char *controlField){
-    int state=0; //state da maquina de estados, inicialmente 0
+    int state = 0; //state da maquina de estados, inicialmente 0
     char buffer;
     int analy;
 
@@ -403,7 +403,7 @@ int llread(unsigned char *packet, int fd){
         if (CMD != (0x00 | ( s_r << 6 ))){
             printf("Undesired message %d, RR will be sent", s_r);
 
-            sendframe_S_U(fd, 0x03,  (0x05 | ( !s_r << 7 )));
+            sendframe_S_U(fd, 0x03,  (0x05 | ( !cur_s << 7 )));
             continue;       // Discard the message.
         }
 
@@ -460,7 +460,7 @@ int llclose(int fd, int role)
 
        return closefd(fd, &oldtio_trans);
     }
-     //coneção com o receptor
+     //conexão com o recetor
     else if(role == rx){
 
         while (desconnect < 0){
