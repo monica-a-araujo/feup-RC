@@ -3,3 +3,4 @@ penguin-received.gif
 *.o
 .idea
 .*
+cmake-build-debug/*
