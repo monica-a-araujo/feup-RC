@@ -1,6 +1,7 @@
 // Link layer protocol implementation
 
-#include "link_layer.h"
+#include "../include/link_layer.h"
+#include "../include/variables.h"
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,19 +10,29 @@
 #include <sys/stat.h>
 #include <termios.h>
 #include <unistd.h>
-#include <variables.h>
 #include <signal.h>
 
 int numTransmissions = 0;
 int fd_trans = 0;
-struct termios oldtio_trans;
-struct termios oldtio_rec;
+const struct termios oldtio_trans;
+const struct termios oldtio_rec;
 
 
 // MISC
 #define _POSIX_SOURCE 1 // POSIX compliant source
 
 
+/*
+int closefd(int fd, struct termios * oldtio) {
+
+    if (tcsetattr(fd, TCSANOW, &oldtio) == -1) {
+        perror("tcsetattr");ghjkg
+        exit(-1);
+    }
+    printf("Success : Oldtio restoured");
+    return close(fd);
+}
+*/
 
 int llopen(LinkLayer connectionParameters)
 {
@@ -37,8 +48,8 @@ int llopen(LinkLayer connectionParameters)
     }
 
     //Conexão com o emissor
-    if(connectionParameters.role == "tx"){
-
+    if(connectionParameters.role == tx){
+        printf("llopen trans\n");
         //abrir file descriptor
         fd = openfd(connectionParameters.serialPort, connectionParameters.baudRate);
 
@@ -54,8 +65,9 @@ int llopen(LinkLayer connectionParameters)
 
             //ler UA (verificar que se mandou o certo, se não erro)
             if((connection = readframe_NS_A(fd, UA)) < 0){
-                printf("Still not received UA. Starting again.");
-            } else printf("Receive UA.");
+                printf("Still not received UA. Starting again.\n");
+            } else printf("Receive UA.\n");
+            printf("1 - %d - %d\n", sent, connection);
        }
 
        if(connection == 0 && sent >= 0){ //o frame set e UA foram enviados e recebidos corretamente e a conexão foi estabelecida.
@@ -78,6 +90,7 @@ int llopen(LinkLayer connectionParameters)
             if((sent = sendframe_S_U(fd, A, UA))<0){
                 printf("Send frame UA fail\n");
             } else printf("Send UA with success.\n");
+            printf("dois %d ponto %d\n", sent, connection);
         }
     }
     return fd;
@@ -169,17 +182,8 @@ int openfd(char serialPort[50],int baudRate){
 
     return fd;
 }
-
-int closefd(int fd, struct termios* oldtio) {
-
-    if (tcsetattr(fd, TCSANOW, oldtio) == -1) {
-        perror("tcsetattr");
-        exit(-1);
-    }
-    printf("Success : Oldtio restoured");
-    return close(fd);
-}
-
+//sucesso return > 0 (numero de bytes escritos)
+//erro return == -1
 int sendframe_S_U(int fd, char addressField, char controlField){
     char frame[5];
     frame[0]= FLAG;
@@ -187,14 +191,15 @@ int sendframe_S_U(int fd, char addressField, char controlField){
     frame[2]= controlField;
     frame[3]= frame[1] ^ frame[2];
     frame[4]= FLAG;
+    printf("send frame s_u: %d, %d, %d, %d, %d", FLAG, addressField, controlField,frame[1] ^ frame[2],FLAG );
 
     return write(fd, frame, 5);
 
-    //sucesso return > 0 (numero de bytes escritos)
-    //erro return == -1
+    
 
 }
 //ler UA
+//return -1: erro   0:sucesso
 int readframe_NS_A(int fd, char controlField){
     int state=0; //state da maquina de estados, inicialmente 0
     char buffer;
@@ -206,8 +211,10 @@ int readframe_NS_A(int fd, char controlField){
         //NOTA: não consegui confirmar, mas pelo que entendi o read escreve no frame - buffer
         //      e depois sempre que é chamado outra vez, volta a rescrever por cima. - CERTO
         if((analy = read(fd, &buffer, 1))==1){
+            printf("read frame receve something\n");
             continue;
         } else if (analy == -1){
+            printf("read frame receve nothing\n");
             return -1;
         }
 
@@ -287,7 +294,7 @@ int readframe_S_A(int fd, char *controlField){
             break;
 
         case 3:
-            if (buffer== controlField ^ A){
+            if (buffer== (atoi(controlField) ^ A)){
                 state =4;
             } else changeState(buffer, &state);
             break;
@@ -304,11 +311,11 @@ int readframe_S_A(int fd, char *controlField){
 
 void changeState(char buffer, int *state){
     if (buffer == FLAG){
-        state=1;
-    } else state = 0;
+        *state = 1;
+    } else *state = 0;
 }
 
-int llwrite(int fd, unsigned char *buf, int bufSize){
+int llwrite(int fd, char *buf, int bufSize){
     static int sval_sen = 0;  // 0S000000 s = N(s) -> número de sequência
     int fr_len;
     char controlField;
@@ -341,7 +348,7 @@ int llwrite(int fd, unsigned char *buf, int bufSize){
             continue;
         }else printf("Succeded to read controlField= %02x with R =%d ", controlField, !sval_sen);
 
-        if ((controlField == 0x05 | ( 1 << 7 )) && sval_sen == 0 || (controlField == 0x05 | ( 0 << 7 )) && sval_sen == 1){
+        if (((controlField == (0x05 | ( 1 << 7 ))) && (sval_sen == 0)) || (controlField == (0x05 | ( 0 << 7 )) && (sval_sen == 1))){
             turnOffAlarm();
             sval_sen = !sval_sen;
             free(fr);
@@ -360,7 +367,7 @@ int llwrite(int fd, unsigned char *buf, int bufSize){
 ////////////////////////////////////////////////
 // LLREAD
 ////////////////////////////////////////////////
-int llread(unsigned char *packet, int fd){
+int llread(char *packet, int fd){
     int packet_len = -1;
 
     static int s_r = 0, cur_s = 0;
@@ -389,9 +396,9 @@ int llread(unsigned char *packet, int fd){
         if(BCC2_CHECK != packet[packet_len-1]) {
             printf("The expected BCC2 was : %02x, which is different from the one received : %02x",BCC2_CHECK
                    ,packet[packet_len-1]);
-            if (CMD == 0x00 | ( 0 << 6 ))
+            if (CMD == (0x00 | ( 0 << 6 )))
                 sendframe_S_U(fd, 0x03 , 0x01 | ( 1 << 7 ));
-            else if (CMD == 0x00 | ( 1 << 6 ))
+            else if (CMD == (0x00 | ( 1 << 6 )))
                 sendframe_S_U(fd, 0x03 , 0x01 | ( 0 << 7 ));
             continue;
 
@@ -421,19 +428,19 @@ int llread(unsigned char *packet, int fd){
 ////////////////////////////////////////////////
 // LLCLOSE
 ////////////////////////////////////////////////
-int llclose(int fd, int role)
+int llclose(int fd, const char * role)
 {
     int desconnect = -1; //connection inicialmente ainda esta estabelecida
 
 
     //erro - tipo de conecção errada
-    if (role != tx && role != rx){
-        printf("Actual flag %d. Must be %d or %d", role, tx, rx);
+    if (strcmp(role, "tx") != 0  && strcmp(role, "rx") != 0 ){
+        printf("Actual flag %s. Must be %d or %d", role, tx, rx);
         return -1;
     }
 
     //Conneçao com o emissor
-    if(role==tx){
+    if(strcmp(role, "tx") == 0 ){
 
         while (desconnect < 0){
             //iniciar alarme
@@ -457,11 +464,18 @@ int llclose(int fd, int role)
                 continue;
             } else printf("Send DISC with success.\n");
        }
+       
+       if (tcsetattr(fd, TCSANOW, &oldtio_trans) == -1) {
+            perror("tcsetattr");
+            exit(-1);
+        }
+        printf("Success : Oldtio restoured");
+        return close(fd);
 
-       return closefd(fd, &oldtio_trans);
+       //return closefd(fd, &oldtio_trans);
     }
      //conexão com o recetor
-    else if(role == rx){
+    else if(strcmp(role, "rx") == 0 ){
 
         while (desconnect < 0){
 
@@ -484,8 +498,14 @@ int llclose(int fd, int role)
             } else printf("Receive DISC.\n");
 
         }
+        if (tcsetattr(fd, TCSANOW, &oldtio_rec) == -1) {
+            perror("tcsetattr");
+            exit(-1);
+        }
+        printf("Success : Oldtio restoured");
+        return close(fd);
 
-        return closefd(fd, &oldtio_rec);
+        //return closefd(fd, &oldtio_rec);
     }
 
 
@@ -563,6 +583,7 @@ void install_alarm() {
         printf("It wasn't possible to install signal.");
         exit(-1);
     }
+    printf("install_alarm with success\n");
     siginterrupt(SIGALRM, TRUE);
 }
 
@@ -576,7 +597,16 @@ void handle_alarm_timeout() {
     if (numTransmissions > MAX_TRANS)
     {
         printf("Exceeded number of allowed transmissions.\n");
-        closefd(fd_trans, &oldtio_trans);
+
+        if (tcsetattr(fd_trans, TCSANOW, &oldtio_trans) == -1) {
+            perror("tcsetattr");
+            exit(-1);
+        }
+        printf("Success : Oldtio restoured");
+        close(fd_trans);
+
+        //closefd(fd_trans, &oldtio_trans);
+
         exit(-1);
     }
 }
@@ -669,9 +699,9 @@ char * tmp_packet = (char*)malloc(sizeof(char)*(*packet_len));
 
 for (int i = 0 ; i < *packet_len; i++){
     if (packet[i] == ESC){
-        if (packet[i+1] == FLAG ^ 0x20)
+        if (packet[i+1] ==( FLAG ^ 0x20))
             tmp_packet[tmp_packet_pos] = FLAG;
-        else if (packet[i+1] == ESC ^ 0x20)
+        else if (packet[i+1] == (ESC ^ 0x20))
             tmp_packet[tmp_packet_pos] = ESC;
 
         i++;
@@ -687,3 +717,4 @@ free(tmp_packet);
 return 0;
 
 }
+

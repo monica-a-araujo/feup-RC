@@ -1,6 +1,7 @@
-bin/
-penguin-received.gif
 *.o
 .idea
 .*
 cmake-build-debug/*
+dumprxfile.txt
+dumptxfile.txt
+penguin-received.*

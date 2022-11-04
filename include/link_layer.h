@@ -34,15 +34,15 @@ int llopen(LinkLayer connectionParameters);
 
 // Receive data in packet.
 // Return number of chars read, or "-1" on error.
-int llread(unsigned char *packet, int fd);
+int llread(char *packet, int fd);
 
 // Close previously opened connection.
 // Return "1" on success or "-1" on error.
-int llclose(int fd, int role);
+int llclose(int fd, const char * role);
 
 // Send data in buf with size bufSize.
 // Return number of chars written, or "-1" on error.
-int llwrite(int fd, unsigned char *buf, int bufSize);
+int llwrite(int fd, char *buf, int bufSize);
 
 //funções de alarme
 void handle_alarm_timeout();
@@ -55,7 +55,7 @@ int destuffing(char * frame, int* fr_len);
 
 // abrir e fechar o ficheiro e atualização/restauro das configurações
 int openfd(char serialPort[50],int baudRate);
-int closefd(int fd, struct termios* oldtio);
+//int closefd(int fd, struct termios* oldtio);
 
 //leitura e criação de tramas do tipo I
 int frame_i_generator(char *data, char *frame, int data_len, char controlField);
