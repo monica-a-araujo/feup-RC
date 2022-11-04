@@ -16,10 +16,9 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
     conParameters.role = role;
     strcpy(conParameters.serialPort, serialPort);
     
-    int main(int argc, char **argv){
 
-        FILE* f;
-        int seq_numbertx = 0                    //número de sequência,
+    FILE* f_trans;
+    int seq_numbertx = 0;                    //número de sequência,
                                                 // por cada byte enviado
                                                 // é incrementado
 
@@ -28,16 +27,17 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
     if (role == "tx") {
         int fd_trans; //file descriptor
 
-        int dataSize = 390, frame_len = 0 , actual_Size = 0; // verificar pq
+        int dataSize = 390;
+        int frame_len = 0;
+        int actual_Size = 0; // verificar pq
 
-        char * content[contentSize]; // conteúdo do ficheiro
+        char * content[dataSize]; // conteúdo do ficheiro
         char* fr = (char*)malloc(sizeof(char)*MAX_SIZE_ALLOC);  //partes do ficheiro
         char* packet[MAX_SIZE_ALLOC];  //
         // fazer a comparação com o path e o role tx;
-        char* fileName = argv[2];
 
-        openFile(fileName, "rb");
-        int fileSize = fsize(f);
+        openFile(&f_trans, filename, "rb");
+        int fileSize = fsize(f_trans);
 
         install_alarm();   // ativar o alarme
 
@@ -45,17 +45,46 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
 
         //control package START
 
-        int C_size = generate_controlPackage(fileName, fileSize, packet ,START);
+        int C_size = generate_controlPackage(filename, fileSize, packet ,START);
 
-        llwrite(fd_trans, pack, &C_start_size);
+        llwrite(fd_trans, packet, &C_size);
         //gerar o data Package
 
+        for(int j = 0 ;TRUE;j++){
+            if (fileSize - seq_numbertx * dataSize < dataSize ) dataSize = fileSize%dataSize;
+            if ((actual_Size = fread(content, 1, dataSize, f_trans)) <= 0) {
+                break;
+            }
 
-<<<<<<< HEAD
+            if (generate_dataPackage(seq_numbertx, content, actual_Size, fr) <0){
+               printf("Error : Data package creation wasn't succesful");
+                return -1;
+            }
+
+            frame_len = actual_Size + 4;
+            if (llwrite(fd_trans, fr, &frame_len) < 0) {
+                PRINT_ERR("Error in Llwrite");
+                return -1;
+            }
+
+            seq_numbertx++;
+        }
+
+
+        // control package END
+        C_size = generate_controlPackage(filename, fileSize, packet,END);
+        llwrite(fd_trans, packet, &C_size);
+
+        free(fr);
+
+        //CLOSE
         llclose(fd_trans, role);
+    }
 
     //receptor
-    } else if (role == "rx"){
+    else if (role == "rx"){
+
+        FILE *f_rec;
 
         int fd_rec;
         int p_rec;
@@ -72,65 +101,25 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
         
         
         //open channel
-=======
-        for(int j = 0 ;TRUE;j++){
-            if (fileSize - seq_numbtx * dataSize < dataSize ) dataSize = fileSize%dataSize;
-            if ((actual_Size = fread(content, 1, contentSize, f)) <= 0) {
-                break;
-            }
-
-            if (generate_dataPackage(seq_numbtx, content, actual_Size, fr) <0){
-               printf("Error : Data package creation wasn't succesful");
-                return -1;
-            }
-
-            frame_len = actual_Size + 4;
-            if (llwrite(fd, fr, &frame_len) < 0) {
-                PRINT_ERR("Error in Llwrite");
-                return -1;
-            }
-
-            seq_numbtx++;
-        }
-
-
-        // control package END
-        C_size = generate_controlPackage(filename, fileSize, packet,END);
-        llwrite(fd, packet, &size);
-
-        free(fr);
-
-        //CLOSE
-        llclose(TRUE, fd_trans, role);
-    }
-
-        //receptor
-    } else if (role == "rx") {
-        int fd_rec;
-
-        openFile(filename, "wb");
-
->>>>>>> 85eb5838070bfa5be772a68f07cf41f26f616ca8
         fd_rec = llopen(conParameters);
 
         //recceive control packet (start)
         while(read_start == TRUE){
             size_packet =  llread(packet, fd_rec);
-            if(packet[0] = Control_start){
+            if(packet[0] == START){
                 printf("start packet in receiver");
                 Read_controlPacket(packet, filename, &filesize, size_packet);
                 read_start = FALSE;
             }
         }
         // opne file with data in the control packet
-        p_rec = openFile(filename, "wb");
+        openFile(f_rec, filename, "wb");
 
-<<<<<<< HEAD
         //read data
         while(TRUE){
             size_packet =  llread(packet, fd_rec);
 
-            if(packet[0]== control_data){
+            if(packet[0]== DATA){
                 size_packet = Read_dataPacket(&seqNumber_rx, data, packet);
                 printf("Sequence Number: %d\n", seqNumber_rx);
                 fwrite(data, sizeof(char), size_packet, fd_rec);
@@ -139,7 +128,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
             //limpar string data
             memset(data, 0, strlen(data));
 
-            if(packet[0]== control_end){
+            if(packet[0]== END){
                 
                 Read_controlPacket(packet, out_filename, out_filesize, size_packet);
                 if(strcmp(out_filename, filename) != 0 && strcmp(out_filesize, filesize)){
@@ -158,14 +147,8 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
         free(out_filename);
 
         //TODO: close file
-=======
-
-        //TODO: perceber que estatistica e que e para mostar
-        llclose(TRUE, fd_rec, role);
->>>>>>> 85eb5838070bfa5be772a68f07cf41f26f616ca8
     }
 }
-<<<<<<< HEAD
 //Read the control packets
 //discover the name and size of the file
 //(Fill the filename field and filesize field)
@@ -175,7 +158,7 @@ int Read_controlPacket(char *packet, char *filename, int *filesize, int size_pac
         for (int i = 0; i < size_packet; i++){
 
             //type of information: file size
-            if(type_file_size == packet[i]){
+            if(TYPE_FILE_SIZE == packet[i]){
                 i++;
                 int length_file_size = packet[i];
                 filesize_in_char = (char*) malloc(length_file_size);
@@ -189,7 +172,7 @@ int Read_controlPacket(char *packet, char *filename, int *filesize, int size_pac
                 free(filesize_in_char);
 
             //type of information: file name
-            } else if(type_file_name == packet[i]){
+            } else if(TYPE_FILE_NAME == packet[i]){
                 i++;
                 int length_file_name = packet[i];
                 i++;
@@ -220,18 +203,9 @@ int Read_dataPacket(int *seqNumber_rx, char *data, char *packet){
     return datasize;
 }
 
-int openFile(char filename, char opt){
-    int ptr = fopen(filename, opt);
-    if(ptr == NULL){
-=======
-
-
-
-
-void openFile(char* filename, char* opt){
-     f = fopen(filename, opt);
+void openFile(FILE *f, char* filename, char* opt){
+    f = fopen(filename, opt);
     if( f == NULL){
->>>>>>> 85eb5838070bfa5be772a68f07cf41f26f616ca8
         printf("%s does not exist", filename);
         exit(-1);
     }
@@ -239,10 +213,10 @@ void openFile(char* filename, char* opt){
 
 
 int generate_controlPackage(char* fileName, int fileSize, char* pack,char s_or_e){
-    int size_nameFile = strlen(nameFile), curr_pos = 0;
+    int size_nameFile = strlen(fileName), curr_pos = 0;
 
     pack[0]= s_or_e;
-    pack[1] = T_FILE_SIZE;
+    pack[1] = TYPE_FILE_SIZE;
 
     char * length_string = (char*)malloc(sizeof(int));
     sprintf(length_string, "%d", fileSize);
@@ -254,7 +228,7 @@ int generate_controlPackage(char* fileName, int fileSize, char* pack,char s_or_e
     }
     curr_pos = 3 + strlen(length_string);
 
-    pack[curr_pos] = T_FILE_NAME;
+    pack[curr_pos] = TYPE_FILE_NAME;
     pack[curr_pos+1] = strlen(fileName);
 
     if (memcpy(&pack[curr_pos+2] , fileName, strlen(fileName)) == NULL){
@@ -270,8 +244,8 @@ int generate_dataPackage(int num_of_seq, char *info, int info_len, char *frame) 
 
     frame[0] = 1;
     frame[1] = num_of_seq % 256;
-    frame[2] = len / 256; // L2
-    frame[3] = len % 256; // L1
+    frame[2] = info_len / 256; // L2
+    frame[3] = info_len % 256; // L1
 
     if (memcpy(&frame[4], info, info_len) == NULL) {
         printf("Error : Package copy wasn't possible.");
@@ -280,11 +254,12 @@ int generate_dataPackage(int num_of_seq, char *info, int info_len, char *frame) 
     printf("Success : Data package was generated.");
     return 0;
 }
+
 // função para determinar o tamanho do ficheiro
-    int fsize(FILE *fp){
-        int prev=ftell(fp);
-        fseek(fp, 0L, SEEK_END);
-        int sz=ftell(fp);
-        fseek(fp,prev,SEEK_SET); //go back to where we were
-        return sz;
-    }
+int fsize(FILE *fp){
+    int prev=ftell(fp);
+    fseek(fp, 0L, SEEK_END);
+    int sz=ftell(fp);
+    fseek(fp,prev,SEEK_SET); //go back to where we were
+    return sz;
+}

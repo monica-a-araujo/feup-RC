@@ -2,8 +2,6 @@
 // Created by inessilva_132 on 13/10/22.
 //
 
-#ifndef FEUP_RC_VARIABLES_H
-#define FEUP_RC_VARIABLES_H
 
 #define BAUDRATE B9600
 #define MODEMDEVICE "/dev/ttyS1"
@@ -44,8 +42,8 @@
 #define START          2
 #define END            3
 
-#define type_file_size         0
-#define type_file_name         1
+#define TYPE_FILE_SIZE          0
+#define TYPE_FILE_NAME          1
 
 /* OTHERS  ---------------------------------------------------------------------------------------------------------*/
 #define FALSE               0
@@ -58,4 +56,3 @@
 #define N_TRIES 3
 #define TIMEOUT 4  
 
-#endif //FEUP_RC_VARIABLES_H
