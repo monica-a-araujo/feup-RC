@@ -36,6 +36,7 @@ int closefd(int fd, struct termios * oldtio) {
 
 int llopen(LinkLayer connectionParameters)
 {
+    printf("llopen\n");
     int fd;
     int connection = -1; //connection inicialmente nao esta estabelecida
     int sent = -1;
@@ -97,28 +98,30 @@ int llopen(LinkLayer connectionParameters)
 }
 
 int openfd(char serialPort[50],int baudRate){
-    struct termios oldtio;
-    struct termios newtio;
+    printf("openfd enter\n");
+    struct termios *oldtio;
+    struct termios *newtio;
 
     // Open serial port device for writing and not as controlling tty
     // because we don't want to get killed if linenoise sends CTRL-C.
-    int fd = open(serialPort, O_WRONLY | O_NOCTTY);
+    int fd = open(serialPort, O_RDWR | O_NOCTTY);
     if (fd < 0)
     {
+        printf("error, openfd serial port\n");
         perror(serialPort);
         exit(-1);
     }
 
 
     // Save current port settings
-    if (tcgetattr(fd, &oldtio) == -1)
+    if (tcgetattr(fd, oldtio) == -1)
     {
         perror("tcgetattr");
         exit(-1);
     }
 
     // Clear struct for new port settings
-    memset(&newtio, 0, sizeof(newtio));
+    memset(newtio, 0, sizeof(newtio));
 
     // BAUDRATE: Set bps rate. You could also use cfsetispeed and cfsetospeed.
     // CRTSCTS : output hardware flow control
@@ -128,41 +131,41 @@ int openfd(char serialPort[50],int baudRate){
     // CS8     : 8n1 (8bit,no parity,1 stopbit)
     // CLOCAL  : local connection, no modem control
     // CREAD   : enable receiving characters
-    newtio.c_cflag = baudRate | CS8 | CLOCAL | CREAD;
+    newtio->c_cflag = baudRate | CS8 | CLOCAL | CREAD;
 
     // IGNPAR: Ignore framing and parity errors
     // ICRNL:  Map CR to NL (otherwise a CR input on the other computer
     //         will not terminate input)
     // Otherwise make device raw (no other input processing)
-    newtio.c_iflag = IGNPAR | ICRNL;
+    newtio->c_iflag = IGNPAR | ICRNL;
 
     // Raw output
-    newtio.c_oflag = 0;
+    newtio->c_oflag = 0;
 
     // ICANON : enable canonical input
     // disable all echo functionality, and don't send signals to calling program
-    newtio.c_lflag = ICANON;
+    newtio->c_lflag = ICANON;
 
     // Initialize all control characters
     // default values can be found in /usr/include/termios.h, and are given
     // in the comments, but we don't need them here
-    newtio.c_cc[VINTR] = 0;    // Ctrl-c
-    newtio.c_cc[VQUIT] = 0;    // Ctrl-'\'
-    newtio.c_cc[VERASE] = 0;   // del
-    newtio.c_cc[VKILL] = 0;    // @
-    newtio.c_cc[VEOF] = 4;     // Ctrl-d
-    newtio.c_cc[VTIME] = 0;    // inter-character timer unused
-    newtio.c_cc[VMIN] = 1;     // blocking read until 1 character arrives
-    newtio.c_cc[VSWTC] = 0;    // '\0'
-    newtio.c_cc[VSTART] = 0;   // Ctrl-q
-    newtio.c_cc[VSTOP] = 0;    // Ctrl-s
-    newtio.c_cc[VSUSP] = 0;    // Ctrl-z
-    newtio.c_cc[VEOL] = 0;     // '\0'
-    newtio.c_cc[VREPRINT] = 0; // Ctrl-r
-    newtio.c_cc[VDISCARD] = 0; // Ctrl-u
-    newtio.c_cc[VWERASE] = 0;  // Ctrl-w
-    newtio.c_cc[VLNEXT] = 0;   // Ctrl-v
-    newtio.c_cc[VEOL2] = 0;    // '\0'
+    newtio->c_cc[VINTR] = 0;    // Ctrl-c
+    newtio->c_cc[VQUIT] = 0;    // Ctrl-'\'
+    newtio->c_cc[VERASE] = 0;   // del
+    newtio->c_cc[VKILL] = 0;    // @
+    newtio->c_cc[VEOF] = 4;     // Ctrl-d
+    newtio->c_cc[VTIME] = 0;    // inter-character timer unused
+    newtio->c_cc[VMIN] = 1;     // blocking read until 1 character arrives
+    newtio->c_cc[VSWTC] = 0;    // '\0'
+    newtio->c_cc[VSTART] = 0;   // Ctrl-q
+    newtio->c_cc[VSTOP] = 0;    // Ctrl-s
+    newtio->c_cc[VSUSP] = 0;    // Ctrl-z
+    newtio->c_cc[VEOL] = 0;     // '\0'
+    newtio->c_cc[VREPRINT] = 0; // Ctrl-r
+    newtio->c_cc[VDISCARD] = 0; // Ctrl-u
+    newtio->c_cc[VWERASE] = 0;  // Ctrl-w
+    newtio->c_cc[VLNEXT] = 0;   // Ctrl-v
+    newtio->c_cc[VEOL2] = 0;    // '\0'
 
     // Now clean the line and activate the settings for the port
     // tcflush() discards data written to the object referred  to
@@ -172,9 +175,9 @@ int openfd(char serialPort[50],int baudRate){
     tcflush(fd, TCIFLUSH);
 
     // Set new port settings
-    if (tcsetattr(fd, TCSANOW, &newtio) == -1)
+    if (tcsetattr(fd, TCSANOW, newtio) == -1)
     {
-        perror("tcsetattr");
+        perror("tcsetattr here");
         exit(-1);
     }
 
@@ -315,7 +318,7 @@ void changeState(char buffer, int *state){
     } else *state = 0;
 }
 
-int llwrite(int fd, char *buf, int bufSize){
+int llwrite(int fd, char *buf, int *bufSize){
     static int sval_sen = 0;  // 0S000000 s = N(s) -> número de sequência
     int fr_len;
     char controlField;
@@ -324,15 +327,15 @@ int llwrite(int fd, char *buf, int bufSize){
     char * buf_cpy = (char*) malloc(MAX_SIZE_ALLOC*sizeof(char));
 
     if(bufSize < 0){
-        printf("Invalid length : %d",bufSize);
+        printf("Invalid length : %d\n",*bufSize);
         return -1;
     }
 
-    memcpy(buf_cpy, buf,bufSize);
+    memcpy(buf_cpy, buf, *bufSize);
 
     for(int i = 0;TRUE;i++){
 
-        memcpy(buf,buf_cpy,bufSize);
+        memcpy(buf,buf_cpy, *bufSize);
         memset(fr,0,strlen(fr));
 
         fr_len = frame_i_generator(buf, fr, bufSize, (0x00 | (sval_sen << 6 )));

@@ -25,7 +25,7 @@ int fsize(FILE *fp);
 
 //funções relacionadas com o Control Package
 int generate_controlPackage( const char* fileName, int fileSize, char** packet,char s_or_e);
-int Read_controlPacket(char *packet, const char *filename, int *filesize, int size_packet);
+int Read_controlPacket(char *packet, char *filename, int *filesize, int size_packet);
 
 //funções relacionadas com o Data Package
 int generate_dataPackage(int num_of_seq, char *info, int info_len, char *frame);

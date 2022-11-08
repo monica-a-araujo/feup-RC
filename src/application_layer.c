@@ -63,7 +63,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
                 break;
             }
 
-            if (generate_dataPackage(seq_numbertx, content, actual_Size, fr) <0){
+            if (generate_dataPackage(seq_numbertx, *content, actual_Size, fr) <0){
                printf("Error : Data package creation wasn't succesful\n");
                 exit(-1);
             }
@@ -158,7 +158,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
 //Read the control packets
 //discover the name and size of the file
 //(Fill the filename field and filesize field)
-int Read_controlPacket(char *packet,  const char *filename, int *filesize, int size_packet){
+int Read_controlPacket(char *packet, char *filename, int *filesize, int size_packet){
     char *filesize_in_char;
 
         for (int i = 0; i < size_packet; i++){
@@ -224,28 +224,27 @@ int generate_controlPackage(const char* fileName, int fileSize, char** packet,ch
     int curr_pos = 0;
 
     packet[0]= s_or_e;
-    packet[1] = TYPE_FILE_SIZE;
+    packet[1] = TYPE_FILE_NAME;
+    packet[2] = strlen(fileName);
 
-    char * length_string = (char*)malloc(sizeof(int));
-    sprintf(length_string, "%d", fileSize);
-    packet[2] = strlen(length_string);
-
-    if (memcpy(&packet[3], length_string, strlen(length_string)) == NULL){
-        printf("Error :  Unable to copy file name");
+    if (memcpy(&packet[3], fileName, strlen(fileName)) == NULL){
+        printf("Error:  Unable to copy file name\n");
         return -1;
     }
-    curr_pos = 3 + strlen(length_string);
+    curr_pos = 3 + strlen(fileName);
+    char * len_str = (char*)malloc(sizeof(int));
+    sprintf(len_str, "%d", fileSize);
 
-    packet[curr_pos] = TYPE_FILE_NAME;
-    packet[curr_pos+1] = strlen(fileName);
+    packet[curr_pos] = TYPE_FILE_SIZE;
+    packet[curr_pos+1] = strlen(len_str);
 
-    if (memcpy(&packet[curr_pos+2] , fileName, strlen(fileName)) == NULL){
-        printf("Error : Unable to copy size of file");
+    if (memcpy(&packet[curr_pos+2] , len_str, strlen(len_str)) == NULL){
+        printf("Error : Unable to copy size of file\n");
         return -1;
     }
 
-    printf("Success : Control package created.");
-    return curr_pos + strlen(fileName) + 2;
+    printf("Success : Control package created.\n");
+    return curr_pos + strlen(len_str) + 2;
 }
 
 int generate_dataPackage(int num_of_seq, char *info, int info_len, char *frame) {
@@ -256,10 +255,10 @@ int generate_dataPackage(int num_of_seq, char *info, int info_len, char *frame) 
     frame[3] = info_len % 256; // L1
 
     if (memcpy(&frame[4], info, info_len) == NULL) {
-        printf("Error : Package copy wasn't possible.");
+        printf("Error : Package copy wasn't possible.\n");
         return -1;
     }
-    printf("Success : Data package was generated.");
+    printf("Success : Data package was generated.\n");
     return 0;
 }
 

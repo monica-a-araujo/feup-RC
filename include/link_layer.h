@@ -42,7 +42,7 @@ int llclose(int fd, const char * role);
 
 // Send data in buf with size bufSize.
 // Return number of chars written, or "-1" on error.
-int llwrite(int fd, char *buf, int bufSize);
+int llwrite(int fd, char *buf, int *bufSize);
 
 //funções de alarme
 void handle_alarm_timeout();
