@@ -53,6 +53,7 @@
 
 /* OTHERS  ---------------------------------------------------------------------------------------------------------*/
 #define BAUDRATE 38400 //medida de velocidade de sinalização e representa o número de mudanças na linha de transmissão ou eventos por segundo
+#define Baudrate_esp B38400
 #define N_TRIES 3
 #define TIMEOUT 4  
 

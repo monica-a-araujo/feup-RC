@@ -1,8 +1,11 @@
+#ifndef _LINK_LAYER_H_
+#define _LINK_LAYER_H_
+
 // Link layer header.
 // NOTE: This file must not be changed.
 
-#ifndef _LINK_LAYER_H_
-#define _LINK_LAYER_H_
+#include <termios.h>
+#include <stdio.h>
 
 typedef enum
 {
@@ -54,7 +57,7 @@ int stuffing(char * frame, int* fr_len);
 int destuffing(char * frame, int* fr_len);
 
 // abrir e fechar o ficheiro e atualização/restauro das configurações
-int openfd(char serialPort[50],struct termios *oldtio, struct termios *newtio);
+int openfd(char serialPort[50], struct termios *oldtio, struct termios *newtio);
 //int closefd(int fd, struct termios* oldtio);
 
 //leitura e criação de tramas do tipo I

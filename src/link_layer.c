@@ -12,13 +12,11 @@
 #include <unistd.h>
 #include <signal.h>
 
- #define Baudrate_esp B38400
 
 int numTransmissions = 0;
 int fd_trans = 0;
 struct termios oldtio_trans;
 struct termios oldtio_rec;
-struct termios newtio;
 
 // MISC
 #define _POSIX_SOURCE 1 // POSIX compliant source
@@ -42,6 +40,7 @@ int llopen(LinkLayer connectionParameters)
     int fd;
     int connection = -1; //connection inicialmente nao esta estabelecida
     int sent = -1;
+    struct termios newtio;
 
 
     //erro-tipo de conexão errada
@@ -84,6 +83,9 @@ int llopen(LinkLayer connectionParameters)
         fd = openfd(connectionParameters.serialPort, &oldtio_rec, &newtio);
 
         while (connection < 0 && sent < 0){
+
+            printf("check point 2\n");
+
             //ler set e verificações padrão
             if((connection = readframe_NS_A(fd, SET)) < 0){
                 printf("Still not received SET.\n");
@@ -120,9 +122,8 @@ int openfd(char serialPort[50],struct termios *oldtio, struct termios *newtio){
         perror("tcgetattr");
         exit(-1);
     }
-    printf("check point 1\n");
+    //printf("check point 1\n");
     // Clear struct for new port settings
-    //bzero(newtio, sizeof(newtio));
     memset(newtio, 0, sizeof(newtio));
    
 
@@ -169,7 +170,7 @@ int openfd(char serialPort[50],struct termios *oldtio, struct termios *newtio){
     newtio->c_cc[VWERASE] = 0;  // Ctrl-w
     newtio->c_cc[VLNEXT] = 0;   // Ctrl-v
     newtio->c_cc[VEOL2] = 0;    // '\0'
-    
+
     printf("check point 1\n");
     // Now clean the line and activate the settings for the port
     // tcflush() discards data written to the object referred  to
@@ -198,9 +199,10 @@ int sendframe_S_U(int fd, char addressField, char controlField){
     frame[2]= controlField;
     frame[3]= frame[1] ^ frame[2];
     frame[4]= FLAG;
-    printf("send frame s_u: %d, %d, %d, %d, %d", FLAG, addressField, controlField,frame[1] ^ frame[2],FLAG );
-
-    return write(fd, frame, 5);
+    printf("send frame s_u: %d, %d, %d, %d, %d\n", FLAG, addressField, controlField,frame[1] ^ frame[2],FLAG );
+    int retWrite = write(fd, frame, 5);
+    printf("retWrite: %d, fd: %d\n",retWrite, fd);
+    return retWrite;
 
     
 
@@ -209,21 +211,23 @@ int sendframe_S_U(int fd, char addressField, char controlField){
 //return -1: erro   0:sucesso
 int readframe_NS_A(int fd, char controlField){
     int state=0; //state da maquina de estados, inicialmente 0
-    char buffer;
+    char buffer = 0x00;
     int analy;
 
     while(TRUE){
         //ler o campo do outro terminal, se não conseguirmos, dá erro
-
-        //NOTA: não consegui confirmar, mas pelo que entendi o read escreve no frame - buffer
-        //      e depois sempre que é chamado outra vez, volta a rescrever por cima. - CERTO
+        printf("check point 3\n");
+        printf("fd: %d\n", fd);
+        //read() is by default blocking call, so it will wait till it gets the data.
         if((analy = read(fd, &buffer, 1))==1){
             printf("read frame receve something\n");
             continue;
         } else if (analy == -1){
             printf("read frame receve nothing\n");
             return -1;
-        }
+        } else printf("analy: %d\n", analy);
+
+        printf("check point 4 ---------------------------\n");
 
         switch (state)
         {
@@ -598,7 +602,7 @@ void install_alarm() {
 void handle_alarm_timeout() {
     numTransmissions++;
 
-    printf("Time out with %d transmissions.", numTransmissions);
+    printf("Time out with %d transmissions.\n", numTransmissions);
 
     // When number of trans is exceeded
     if (numTransmissions > MAX_TRANS)
@@ -609,7 +613,7 @@ void handle_alarm_timeout() {
             perror("tcsetattr");
             exit(-1);
         }
-        printf("Success : Oldtio restoured");
+        printf("Success : Oldtio restoured\n");
         close(fd_trans);
 
         //closefd(fd_trans, &oldtio_trans);
