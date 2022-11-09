@@ -17,7 +17,6 @@ int numTransmissions = 0;
 int fd_trans = 0;
 struct termios oldtio_trans;
 struct termios oldtio_rec;
-struct termios newtio;
 
 // MISC
 #define _POSIX_SOURCE 1 // POSIX compliant source
@@ -41,6 +40,8 @@ int llopen(LinkLayer connectionParameters)
     int fd;
     int connection = -1; //connection inicialmente nao esta estabelecida
     int sent = -1;
+    struct termios newtio;
+
     
 
 
@@ -96,7 +97,7 @@ int llopen(LinkLayer connectionParameters)
             if((sent = sendframe_S_U(fd, A, UA))<0){
                 printf("Send frame UA fail\n");
             } else printf("Send UA with success.\n");
-            printf("dois %d ponto %d\n", sent, connection);
+            printf("sent %d connecto %d\n", sent, connection);
         }
     }
     return fd;
@@ -129,9 +130,10 @@ int openfd(char serialPort[50],struct termios *oldtio, struct termios *newtio){
     // Clear struct for new port settings
     /*if(newtio != NULL){
         printf("newtio !=");
-        memset(newtio, 0, sizeof(newtio));
+        
     }
     */
+    memset(newtio, 0, sizeof(newtio));
    
 
     // BAUDRATE: Set bps rate. You could also use cfsetispeed and cfsetospeed.
@@ -223,17 +225,16 @@ int readframe_NS_A(int fd, char controlField){
     while(TRUE){
         //ler o campo do outro terminal, se não conseguirmos, dá erro
         printf("check point 3\n");
-        printf("fd: %d\n", fd);
+        //printf("fd: %d\n", fd);
         //read() is by default blocking call, so it will wait till it gets the data.
         if((analy = read(fd, &buffer, 1))==1){
-            printf("read frame receve something\n");
-            continue;
+            printf("read frame received something\n");
         } else if (analy == -1){
-            printf("read frame receve nothing\n");
+            printf("read frame received nothing\n");
             return -1;
         } else printf("analy: %d\n", analy);
 
-        printf("check point 4 ---------------------------\n");
+        //printf("check point 4 ---------------------------\n");
 
         switch (state)
         {
@@ -340,6 +341,8 @@ int llwrite(int fd, char *buf, int *bufSize){
     char * fr = (char*) malloc(MAX_SIZE_ALLOC*sizeof(char));
     char * buf_cpy = (char*) malloc(MAX_SIZE_ALLOC*sizeof(char));
 
+    printf("llwrite\n");
+
     if(bufSize < 0){
         printf("Invalid length : %d\n",*bufSize);
         return -1;
@@ -354,6 +357,7 @@ int llwrite(int fd, char *buf, int *bufSize){
 
         fr_len = frame_i_generator(buf, fr, bufSize, (0x00 | (sval_sen << 6 )));
         alarm(TIMEOUT);
+        
         if( write(fd,fr,fr_len) < 0){
             printf("Sender wasn't able to write into frame.");
             continue;
@@ -372,13 +376,13 @@ int llwrite(int fd, char *buf, int *bufSize){
             free(buf_cpy);
             return 0;
         }
-        if (controlField == (0x01 | ( !sval_sen << 7 )) || controlField == (0x01 | ( sval_sen << 7 ))){
+        if (controlField == (0x01 | ( (!sval_sen) << 7 )) || controlField == (0x01 | ( sval_sen << 7 ))){
             turnOffAlarm();
             printf("Error : Received REJ SIGNAL");
             continue;
         }
     }
-
+    printf("llwrite end \n");
 }
 
 ////////////////////////////////////////////////
@@ -637,6 +641,7 @@ void turnOffAlarm() {
 
 int frame_i_generator(char *data, char *frame, int data_len, char controlField){
     int fr_len, bcc_len= 1;
+    printf("frame_i_generator\n");
 
     // Stuffing bcc2 and data.
     char *BCC2 = (char*)malloc(sizeof(char));
