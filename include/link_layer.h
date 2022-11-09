@@ -31,6 +31,11 @@ typedef struct
 #define FALSE 0
 #define TRUE 1
 
+// abrir e fechar o ficheiro e atualização/restauro das configurações
+int openfd(char serialPort[50], struct termios *oldtio, struct termios *newtio);
+//int closefd(int fd, struct termios* oldtio);
+
+
 // Open a connection using the "port" parameters defined in struct linkLayer.
 // Return "1" on success or "-1" on error.
 int llopen(LinkLayer connectionParameters);
@@ -56,9 +61,6 @@ void turnOffAlarm();
 int stuffing(char * frame, int* fr_len);
 int destuffing(char * frame, int* fr_len);
 
-// abrir e fechar o ficheiro e atualização/restauro das configurações
-int openfd(char serialPort[50], struct termios *oldtio, struct termios *newtio);
-//int closefd(int fd, struct termios* oldtio);
 
 //leitura e criação de tramas do tipo I
 int frame_i_generator(char *data, char *frame, int data_len, char controlField);

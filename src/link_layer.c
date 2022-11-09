@@ -17,6 +17,7 @@ int numTransmissions = 0;
 int fd_trans = 0;
 struct termios oldtio_trans;
 struct termios oldtio_rec;
+struct termios newtio;
 
 // MISC
 #define _POSIX_SOURCE 1 // POSIX compliant source
@@ -40,7 +41,7 @@ int llopen(LinkLayer connectionParameters)
     int fd;
     int connection = -1; //connection inicialmente nao esta estabelecida
     int sent = -1;
-    struct termios newtio;
+    
 
 
     //erro-tipo de conexão errada
@@ -103,6 +104,8 @@ int llopen(LinkLayer connectionParameters)
 
 int openfd(char serialPort[50],struct termios *oldtio, struct termios *newtio){
     printf("openfd enter\n");
+    printf("serial port: %s\n", serialPort);
+    
 
     // Open serial port device for writing and not as controlling tty
     // because we don't want to get killed if linenoise sends CTRL-C.
@@ -124,7 +127,11 @@ int openfd(char serialPort[50],struct termios *oldtio, struct termios *newtio){
     }
     //printf("check point 1\n");
     // Clear struct for new port settings
-    memset(newtio, 0, sizeof(newtio));
+    /*if(newtio != NULL){
+        printf("newtio !=");
+        memset(newtio, 0, sizeof(newtio));
+    }
+    */
    
 
     // BAUDRATE: Set bps rate. You could also use cfsetispeed and cfsetospeed.
@@ -148,7 +155,7 @@ int openfd(char serialPort[50],struct termios *oldtio, struct termios *newtio){
 
     // ICANON : enable canonical input
     // disable all echo functionality, and don't send signals to calling program
-    newtio->c_lflag = ICANON;
+    newtio->c_lflag = 0;
 
     // Initialize all control characters
     // default values can be found in /usr/include/termios.h, and are given
@@ -171,13 +178,12 @@ int openfd(char serialPort[50],struct termios *oldtio, struct termios *newtio){
     newtio->c_cc[VLNEXT] = 0;   // Ctrl-v
     newtio->c_cc[VEOL2] = 0;    // '\0'
 
-    printf("check point 1\n");
     // Now clean the line and activate the settings for the port
     // tcflush() discards data written to the object referred  to
     // by  fd but not transmitted, or data received but not read,
     // depending on the value of queue_selector:
     //   TCIFLUSH - flushes data received but not read.
-    tcflush(fd, TCIFLUSH);
+    tcflush(fd, TCIOFLUSH);
 
     // Set new port settings
     if (tcsetattr(fd, TCSANOW, newtio) == -1)
