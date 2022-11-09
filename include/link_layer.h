@@ -54,7 +54,7 @@ int stuffing(char * frame, int* fr_len);
 int destuffing(char * frame, int* fr_len);
 
 // abrir e fechar o ficheiro e atualização/restauro das configurações
-int openfd(char serialPort[50],int baudRate);
+int openfd(char serialPort[50],struct termios *oldtio, struct termios *newtio);
 //int closefd(int fd, struct termios* oldtio);
 
 //leitura e criação de tramas do tipo I

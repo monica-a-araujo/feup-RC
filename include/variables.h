@@ -52,7 +52,7 @@
 #define BIT(n)              (1 << n)
 
 /* OTHERS  ---------------------------------------------------------------------------------------------------------*/
-#define BAUDRATE 9600 //medida de velocidade de sinalização e representa o número de mudanças na linha de transmissão ou eventos por segundo
+#define BAUDRATE 38400 //medida de velocidade de sinalização e representa o número de mudanças na linha de transmissão ou eventos por segundo
 #define N_TRIES 3
 #define TIMEOUT 4  
 

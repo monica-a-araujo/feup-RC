@@ -31,9 +31,10 @@ int main(int argc, char *argv[])
     const char *serialPort = argv[1];
     const char *role = argv[2];
     const char *filename = argv[3];
+    /*int bd_in;
 
-    int bd_in;
-    printf("Choose a Baudrate: \n"
+    while(TRUE){
+      printf("Choose a Baudrate: \n"
             "1 - B1200\n"
             "2 - B2400\n"
             "3 - B4800\n"
@@ -41,30 +42,34 @@ int main(int argc, char *argv[])
             "5 - B38400\n"
             "6 - B115200\n"
             "Value: ");
-    scanf("%d", &bd_in);
 
-  if(bd_in> 6 || bd_in < 1){
-    perror("Choose a valid baudrate! ");
-    return -1;
-  }
+      scanf("%d", &bd_in);
+
+      if(bd_in> 6 || bd_in < 1){
+        printf("Choose a valid baudrate!\n");
+        continue;
+      } else break;
+    }
+   
 
   int bd_a[] = {1200,2400, 4800, 19200, 38400, 115200};
+  */
 
-    printf("Starting link-layer protocol application\n"
-           "  - Serial port: %s\n"
-           "  - Role: %s\n"
-           "  - Baudrate: %d\n"
-           "  - Number of tries: %d\n"
-           "  - Timeout: %d\n"
-           "  - Filename: %s\n",
-           serialPort,
-           role,
-           bd_a[bd_in - 1],
-           N_TRIES,
-           TIMEOUT,
-           filename);
+  printf("Starting link-layer protocol application\n"
+        "  - Serial port: %s\n"
+        "  - Role: %s\n"
+        "  - Baudrate: %d\n"
+        "  - Number of tries: %d\n"
+        "  - Timeout: %d\n"
+        "  - Filename: %s\n",
+        serialPort,
+        role,
+        BAUDRATE,
+        N_TRIES,
+        TIMEOUT,
+        filename);
 
-    applicationLayer(serialPort, role, bd_a[bd_in - 1], N_TRIES, TIMEOUT, filename);
+    applicationLayer(serialPort, role, BAUDRATE, N_TRIES, TIMEOUT, filename);
 
     return 0;
 }

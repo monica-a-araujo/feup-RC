@@ -12,11 +12,13 @@
 #include <unistd.h>
 #include <signal.h>
 
+ #define Baudrate_esp B38400
+
 int numTransmissions = 0;
 int fd_trans = 0;
-const struct termios oldtio_trans;
-const struct termios oldtio_rec;
-
+struct termios oldtio_trans;
+struct termios oldtio_rec;
+struct termios newtio;
 
 // MISC
 #define _POSIX_SOURCE 1 // POSIX compliant source
@@ -52,7 +54,7 @@ int llopen(LinkLayer connectionParameters)
     if(connectionParameters.role == tx){
         printf("llopen trans\n");
         //abrir file descriptor
-        fd = openfd(connectionParameters.serialPort, connectionParameters.baudRate);
+        fd = openfd(connectionParameters.serialPort, &oldtio_trans, &newtio);
 
 
         while (connection < 0 && sent < 0){
@@ -79,7 +81,7 @@ int llopen(LinkLayer connectionParameters)
     //conexão com o receptor
     else if(connectionParameters.role == rx){
         //abrir file descriptor
-        fd = openfd(connectionParameters.serialPort, connectionParameters.baudRate);
+        fd = openfd(connectionParameters.serialPort, &oldtio_rec, &newtio);
 
         while (connection < 0 && sent < 0){
             //ler set e verificações padrão
@@ -97,17 +99,15 @@ int llopen(LinkLayer connectionParameters)
     return fd;
 }
 
-int openfd(char serialPort[50],int baudRate){
+int openfd(char serialPort[50],struct termios *oldtio, struct termios *newtio){
     printf("openfd enter\n");
-    struct termios *oldtio;
-    struct termios *newtio;
 
     // Open serial port device for writing and not as controlling tty
     // because we don't want to get killed if linenoise sends CTRL-C.
     int fd = open(serialPort, O_RDWR | O_NOCTTY);
     if (fd < 0)
     {
-        printf("error, openfd serial port\n");
+        printf("error, open\n");
         perror(serialPort);
         exit(-1);
     }
@@ -116,12 +116,15 @@ int openfd(char serialPort[50],int baudRate){
     // Save current port settings
     if (tcgetattr(fd, oldtio) == -1)
     {
+        printf("error, txgetattr\n");
         perror("tcgetattr");
         exit(-1);
     }
-
+    printf("check point 1\n");
     // Clear struct for new port settings
+    //bzero(newtio, sizeof(newtio));
     memset(newtio, 0, sizeof(newtio));
+   
 
     // BAUDRATE: Set bps rate. You could also use cfsetispeed and cfsetospeed.
     // CRTSCTS : output hardware flow control
@@ -131,7 +134,7 @@ int openfd(char serialPort[50],int baudRate){
     // CS8     : 8n1 (8bit,no parity,1 stopbit)
     // CLOCAL  : local connection, no modem control
     // CREAD   : enable receiving characters
-    newtio->c_cflag = baudRate | CS8 | CLOCAL | CREAD;
+    newtio->c_cflag = Baudrate_esp | CS8 | CLOCAL | CREAD;
 
     // IGNPAR: Ignore framing and parity errors
     // ICRNL:  Map CR to NL (otherwise a CR input on the other computer
@@ -166,7 +169,8 @@ int openfd(char serialPort[50],int baudRate){
     newtio->c_cc[VWERASE] = 0;  // Ctrl-w
     newtio->c_cc[VLNEXT] = 0;   // Ctrl-v
     newtio->c_cc[VEOL2] = 0;    // '\0'
-
+    
+    printf("check point 1\n");
     // Now clean the line and activate the settings for the port
     // tcflush() discards data written to the object referred  to
     // by  fd but not transmitted, or data received but not read,
